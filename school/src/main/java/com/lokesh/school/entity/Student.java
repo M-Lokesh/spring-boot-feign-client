@@ -1,0 +1,16 @@
+package com.lokesh.school.entity;
+
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class Student {
+
+    private String firstname;
+    private String lastname;
+    private String email;
+}
