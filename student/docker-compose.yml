@@ -1,0 +1,101 @@
+#services:
+#  config-server:
+#    image: config-server
+#    build:
+#      context: ./
+#      dockerfile: Dockerfile
+#    container_name: config-server-ms
+#    ports:
+#      - "8888:8888"
+#    restart: always
+#    networks:
+#      - lokesh-school
+#
+#  discovery:
+#    image: discovery
+#    build:
+#      context: ./
+#      dockerfile: Dockerfile
+#    container_name: discovery-ms
+#    ports:
+#      - "8761:8761"
+#    restart: always
+#    networks:
+#      - lokesh-school
+#
+#
+#  students:
+#    image: student
+#    build:
+#      context: ./
+#      dockerfile: Dockerfile
+#    container_name: student-ms
+#    ports:
+#      - "8090:8090"
+#    restart: always
+#    networks:
+#      - lokesh-school
+#
+#
+#  schools:
+#    image: school
+#    build:
+#      context: ./
+#      dockerfile: Dockerfile
+#    container_name: school-ms
+#    ports:
+#      - "8070:8070"
+#    restart: always
+#    networks:
+#      - lokesh-school
+#
+#
+#  gateway:
+#    image: gateway
+#    build:
+#      context: ./
+#      dockerfile: Dockerfile
+#    container_name: gateway-ms
+#    ports:
+#      - "8222:8222"
+#    restart: always
+#    networks:
+#      - lokesh-school
+#
+#
+#networks:
+#  lokesh-school:
+#    driver: "bridge"
+
+services:
+  schools:
+    build: ../school
+    image: "lokesh874/schools:s1"
+    container_name: schools-ms
+    ports:
+      - "8090:8090"
+    deploy:
+      resources:
+        limits:
+          memory: 700m
+    networks:
+      - school
+
+
+  students:
+    build: ./
+    image: "lokesh874/students:s1"
+    container_name: students-ms
+    ports:
+      - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 700m
+    networks:
+      - school
+
+
+networks:
+  school:
+    driver: "bridge"
