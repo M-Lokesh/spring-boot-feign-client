@@ -1,101 +1,134 @@
-#services:
-#  config-server:
-#    image: config-server
-#    build:
-#      context: ./
-#      dockerfile: Dockerfile
-#    container_name: config-server-ms
-#    ports:
-#      - "8888:8888"
-#    restart: always
-#    networks:
-#      - lokesh-school
-#
-#  discovery:
-#    image: discovery
-#    build:
-#      context: ./
-#      dockerfile: Dockerfile
-#    container_name: discovery-ms
-#    ports:
-#      - "8761:8761"
-#    restart: always
-#    networks:
-#      - lokesh-school
-#
-#
-#  students:
-#    image: student
-#    build:
-#      context: ./
-#      dockerfile: Dockerfile
-#    container_name: student-ms
-#    ports:
-#      - "8090:8090"
-#    restart: always
-#    networks:
-#      - lokesh-school
-#
-#
-#  schools:
-#    image: school
-#    build:
-#      context: ./
-#      dockerfile: Dockerfile
-#    container_name: school-ms
-#    ports:
-#      - "8070:8070"
-#    restart: always
-#    networks:
-#      - lokesh-school
-#
-#
-#  gateway:
-#    image: gateway
-#    build:
-#      context: ./
-#      dockerfile: Dockerfile
-#    container_name: gateway-ms
-#    ports:
-#      - "8222:8222"
-#    restart: always
-#    networks:
-#      - lokesh-school
-#
-#
-#networks:
-#  lokesh-school:
-#    driver: "bridge"
-
 services:
-  schools:
-    build: ../school
-    image: "lokesh874/schools:s1"
-    container_name: schools-ms
+  configserver:
+    image: "lokesh874/configserver:m1"
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: "configserver-ms"
     ports:
-      - "8090:8090"
+      - "8888:8888"
+    healthcheck:
+      test: "curl --fail --silent localhost:8888/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - lokesh-school
     deploy:
       resources:
         limits:
           memory: 700m
-    networks:
-      - school
 
+  discoveryserver:
+    image: "lokesh874/discoveryserver:m1"
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: "discovery-ms"
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: "curl --fail --silent localhost:8761/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    depends_on:
+      configserver:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+      SPRING_CONFIG_IMPORT: "configserver:http://configserver:8888/"
+      SPRING_APPLICATION_NAME: "discoveryserver"
+    networks:
+      - lokesh-school
+    deploy:
+      resources:
+        limits:
+          memory: 700m
 
   students:
-    build: ./
-    image: "lokesh874/students:s1"
-    container_name: students-ms
+    image: "lokesh874/students:m1"
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: "students-ms"
     ports:
-      - "8080:8080"
+      - "8090:8090"
+    healthcheck:
+      test: "curl --fail --silent localhost:8090/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    depends_on:
+      configserver:
+        condition: service_healthy
+      discoveryserver:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+      SPRING_CONFIG_IMPORT: "configserver:http://configserver:8888/"
+      SPRING_APPLICATION_NAME: "students"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discoveryserver:8761/eureka/"
+    networks:
+      - lokesh-school
     deploy:
       resources:
         limits:
           memory: 700m
+
+
+  schools:
+    image: "lokesh874/schools:m1"
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: "schools-ms"
+    ports:
+      - "8070:8070"
+    depends_on:
+      configserver:
+        condition: service_healthy
+      discoveryserver:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+      SPRING_CONFIG_IMPORT: "configserver:http://configserver:8888/"
+      SPRING_APPLICATION_NAME: "schools"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discoveryserver:8761/eureka/"
     networks:
-      - school
+      - lokesh-school
+    deploy:
+      resources:
+        limits:
+          memory: 700m
+
+
+  gatewayserver:
+    image: "lokesh874/gatewayserver:m1"
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: "gatewayserver-ms"
+    ports:
+      - "8222:8222"
+    depends_on:
+      configserver:
+        condition: service_healthy
+      discoveryserver:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+      SPRING_CONFIG_IMPORT: "configserver:http://configserver:8888/"
+      SPRING_APPLICATION_NAME: "gatewayserver"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eurekaserver:8761/eureka/"
+    restart: always
+    networks:
+      - lokesh-school
 
 
 networks:
-  school:
+  lokesh-school:
     driver: "bridge"
